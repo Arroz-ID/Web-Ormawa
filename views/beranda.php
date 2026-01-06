@@ -48,7 +48,7 @@
                             <span class="text-muted small text-uppercase fw-bold">Anggota Bergabung</span>
                         </div>
                         <div class="col-md-4">
-                            <h3 class="fw-bold text-warning mb-0">2025</h3>
+                            <h3 class="fw-bold text-warning mb-0"><?php echo date('Y'); ?></h3>
                             <span class="text-muted small text-uppercase fw-bold">Periode Aktif</span>
                         </div>
                     </div>
@@ -132,13 +132,27 @@
                         
                         <div class="card h-100 border-0 shadow-sm hover-card profile-card">
                             
+                            <?php 
+                                $logoFile = $org['logo'] ?? '';
+                                $finalLogoSrc = null;
+
+                                // 1. Cek di folder profil (Tempat upload baru)
+                                if (!empty($logoFile) && file_exists('assets/images/profil/' . $logoFile)) {
+                                    $finalLogoSrc = 'assets/images/profil/' . $logoFile;
+                                } 
+                                // 2. Cek di folder images biasa (Legacy/Data lama)
+                                elseif (!empty($logoFile) && file_exists('assets/images/' . $logoFile)) {
+                                    $finalLogoSrc = 'assets/images/' . $logoFile;
+                                }
+                            ?>
+
                             <div class="profile-img-wrapper">
-                                <?php if (!empty($org['logo']) && file_exists('assets/images/' . $org['logo'])): ?>
-                                    <img src="assets/images/<?php echo htmlspecialchars($org['logo']); ?>" 
+                                <?php if ($finalLogoSrc): ?>
+                                    <img src="<?php echo htmlspecialchars($finalLogoSrc); ?>" 
                                          alt="Logo"
-                                         class="profile-img shadow-sm">
+                                         class="profile-img shadow-sm bg-white">
                                 <?php else: ?>
-                                    <div class="profile-img-placeholder shadow-sm">
+                                    <div class="profile-img-placeholder shadow-sm bg-light">
                                         <i class="fas fa-users fa-2x text-primary"></i>
                                     </div>
                                 <?php endif; ?>
@@ -219,7 +233,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const title = item.querySelector('.card-title').textContent.toLowerCase();
                 const category = item.getAttribute('data-kategori').toLowerCase();
                 
-                // Cari berdasarkan Nama atau Kategori (HIMA/UKM)
                 if (title.includes(filterValue) || category.includes(filterValue)) {
                     item.style.display = 'block';
                     item.classList.add('animate__animated', 'animate__fadeIn');
@@ -230,7 +243,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
 
-            // Tampilkan pesan jika tidak ada hasil
             if(hasResults) {
                 noResultsMsg.style.display = 'none';
             } else {
@@ -242,7 +254,6 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style>
-    /* CSS Card & Logo Agar Rapi */
     .profile-card {
         overflow: visible !important; 
         margin-top: 50px;

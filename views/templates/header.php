@@ -3,10 +3,10 @@
 $path = dirname($_SERVER['SCRIPT_NAME']);
 $base_path = rtrim($path, '/') . '/';
 
-// Logika untuk menentukan halaman aktif berdasarkan parameter 'action' di URL
+// Logika untuk menentukan halaman aktif
 $current_page = $_GET['action'] ?? 'beranda';
 
-// Cek session start
+// Cek session start (Hanya start jika belum aktif)
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
@@ -52,7 +52,7 @@ if (session_status() == PHP_SESSION_NONE) {
         }
 
         /* Nav Link Styling */
-        .nav-link {
+        .navbar-nav .nav-link {
             font-weight: 500;
             color: rgba(255,255,255,0.8) !important;
             transition: all 0.3s ease;
@@ -60,12 +60,12 @@ if (session_status() == PHP_SESSION_NONE) {
             padding: 8px 15px !important;
         }
 
-        .nav-link:hover {
+        .navbar-nav .nav-link:hover {
             color: #fff !important;
         }
 
-        /* PERBAIKAN: Animasi Indikator Halaman Aktif */
-        .nav-link::after {
+        /* Animasi Indikator Halaman Aktif */
+        .navbar-nav .nav-link::after {
             content: '';
             position: absolute;
             bottom: -2px;
@@ -79,19 +79,17 @@ if (session_status() == PHP_SESSION_NONE) {
             opacity: 0;
         }
 
-        /* Munculkan garis saat aktif */
-        .nav-link.active {
+        .navbar-nav .nav-link.active {
             color: #fff !important;
             font-weight: 700;
         }
 
-        .nav-link.active::after {
+        .navbar-nav .nav-link.active::after {
             width: 70%;
             opacity: 1;
         }
 
-        /* Efek hover juga memberikan sedikit indikasi garis */
-        .nav-link:hover::after {
+        .navbar-nav .nav-link:hover::after {
             width: 40%;
             opacity: 0.5;
         }
@@ -162,10 +160,6 @@ if (session_status() == PHP_SESSION_NONE) {
                         <a class="nav-link <?php echo ($current_page == 'dashboard') ? 'active' : ''; ?>" 
                            href="<?php echo $base_path; ?>index.php?action=dashboard">Dashboard</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link <?php echo ($current_page == 'riwayat') ? 'active' : ''; ?>" 
-                           href="<?php echo $base_path; ?>index.php?action=riwayat">Riwayat</a>
-                    </li>
                     <?php endif; ?>
                 </ul>
 
@@ -188,12 +182,17 @@ if (session_status() == PHP_SESSION_NONE) {
                         <div class="dropdown">
                             <a class="btn btn-light text-primary px-4 rounded-pill dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
                                 <i class="fas fa-user-circle me-2"></i> 
-                                <span><?php echo htmlspecialchars(explode(' ', $_SESSION['nama_lengkap'])[0]); ?></span>
+                                <?php 
+                                    // PERBAIKAN: Ambil nama dari session dengan aman
+                                    $nama_display = isset($_SESSION['nama_lengkap']) ? explode(' ', $_SESSION['nama_lengkap'])[0] : 'Member'; 
+                                ?>
+                                <span><?php echo htmlspecialchars($nama_display); ?></span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end mt-3">
-                                <li><a class="dropdown-item" href="index.php?action=profile">Edit Profil</a></li>
+                                <li><a class="dropdown-item" href="index.php?action=riwayat"><i class="fas fa-history me-2 text-primary"></i>Riwayat Pendaftaran</a></li>
+                                
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger" href="index.php?action=logout">Logout</a></li>
+                                <li><a class="dropdown-item text-danger" href="index.php?action=logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                             </ul>
                         </div>
 

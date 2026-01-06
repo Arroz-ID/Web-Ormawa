@@ -25,11 +25,26 @@
                 <div class="col-lg-4 col-md-6 organisasi-item">
                     <div class="card h-100 shadow-sm border-0 hover-lift">
                         <div class="card-body text-center p-4">
+                            
+                            <?php 
+                                $logoFile = $org['logo'] ?? '';
+                                $finalLogoSrc = null;
+
+                                // 1. Cek di folder profil (Tempat upload baru)
+                                if (!empty($logoFile) && file_exists('assets/images/profil/' . $logoFile)) {
+                                    $finalLogoSrc = 'assets/images/profil/' . $logoFile;
+                                } 
+                                // 2. Cek di folder images biasa (Data lama)
+                                elseif (!empty($logoFile) && file_exists('assets/images/' . $logoFile)) {
+                                    $finalLogoSrc = 'assets/images/' . $logoFile;
+                                }
+                            ?>
+
                             <div class="mb-3 d-flex justify-content-center">
-                                <?php if (!empty($org['logo'])): ?>
-                                    <img src="assets/images/<?php echo htmlspecialchars($org['logo']); ?>" 
+                                <?php if ($finalLogoSrc): ?>
+                                    <img src="<?php echo htmlspecialchars($finalLogoSrc); ?>" 
                                          alt="<?php echo htmlspecialchars($org['nama_organisasi']); ?>"
-                                         class="rounded-circle shadow-sm" 
+                                         class="rounded-circle shadow-sm border" 
                                          style="width: 80px; height: 80px; object-fit: cover;">
                                 <?php else: ?>
                                     <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" 
@@ -78,6 +93,7 @@ document.getElementById('searchOrganisasi').addEventListener('keyup', function()
         let text = item.textContent.toLowerCase();
         if (text.includes(filter)) {
             item.style.display = '';
+            item.classList.add('animate__animated', 'animate__fadeIn');
         } else {
             item.style.display = 'none';
         }

@@ -1,5 +1,5 @@
 <?php
-require_once 'Database.php';
+// File: models/AdminModel.php
 
 class AdminModel {
     private $db;
@@ -9,22 +9,25 @@ class AdminModel {
         $this->db = Database::getInstance()->getConnection();
     }
 
-    // Cek Login: Menerima Username ATAU Email
     public function login($identifier, $password) {
-        // Query cek Username ATAU Email
+        // Login Admin via Username atau Email
         $query = "SELECT * FROM " . $this->table . " 
-                  WHERE (username = :id OR email = :id) 
-                  AND status_aktif = 'active'";
+                  WHERE username = :id OR email = :id";
         
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':id', $identifier);
         $stmt->execute();
         
         $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // Verifikasi Password (jika password di DB di-hash)
+        // Jika password admin Anda masih plain text (belum di-hash), 
+        // gunakan: if ($admin && $admin['password'] == $password) { ... }
         
         if ($admin && password_verify($password, $admin['password'])) {
             return $admin;
         }
+        
         return false;
     }
 }

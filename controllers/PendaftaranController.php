@@ -1,128 +1,112 @@
 <?php
-require_once 'models/PendaftaranModel.php';
-require_once 'models/OrganisasiModel.php';
-require_once 'models/DivisiModel.php';
-require_once 'models/Database.php';
-
 class PendaftaranController {
     private $pendaftaranModel;
-    private $organisasiModel;
     private $divisiModel;
+    private $organisasiModel;
 
     public function __construct() {
         $this->pendaftaranModel = new PendaftaranModel();
-        $this->organisasiModel = new OrganisasiModel();
-        $this->divisiModel = new DivisiModel();
+        if(class_exists('DivisiModel')) $this->divisiModel = new DivisiModel();
+        else { require_once 'models/DivisiModel.php'; $this->divisiModel = new DivisiModel(); }
+        
+        if(class_exists('OrganisasiModel')) $this->organisasiModel = new OrganisasiModel();
+        else { require_once 'models/OrganisasiModel.php'; $this->organisasiModel = new OrganisasiModel(); }
     }
 
     public function kepengurusan() {
         if (session_status() == PHP_SESSION_NONE) session_start();
-
-        if (!isset($_SESSION['anggota_id'])) {
-            header('Location: index.php?action=login');
-            exit;
-        }
-
-        $organisasi_id = $_GET['organisasi_id'] ?? null;
-        if (!$organisasi_id) {
-            header('Location: index.php');
-            exit;
-        }
+        
+        $organisasi_id = isset($_GET['organisasi_id']) ? intval($_GET['organisasi_id']) : 0;
+        if ($organisasi_id == 0) { header('Location: index.php?action=organisasi'); exit; }
 
         $organisasi = $this->organisasiModel->getOrganisasiById($organisasi_id);
-        $jabatan = $this->divisiModel->getJabatanTersedia();
-        $divisi = $this->divisiModel->getDivisiByOrganisasi($organisasi_id);
+        $divisi_tersedia = $this->divisiModel->getDivisiByOrganisasi($organisasi_id);
+        $jabatan = $this->divisiModel->getJabatanTersedia(); 
+
+        // Variable bantu untuk menampung data lama di view
+        $old = [];
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
-            // 1. PROSES UPLOAD BERKAS
-            $berkasName = null;
+            // Simpan inputan user ke variabel $old agar bisa dikembalikan ke View
+            $old = $_POST;
+
+            // 1. Validasi Wajib
+            if (empty($_POST['jabatan_id']) || empty($_POST['motivasi'])) {
+                $_SESSION['error'] = "Harap isi Jabatan dan Motivasi!";
+                require 'views/pendaftaran/kepengurusan.php'; // Panggil view kembali dengan data $old
+                return;
+            }
+
+            // 2. Upload Berkas
+            $targetDir = "assets/uploads/berkas/";
+            if (!file_exists($targetDir)) mkdir($targetDir, 0777, true);
+            
+            // CV/KTM (Wajib)
+            $fileWajib = '';
+            // Cek apakah file diupload
+            if (isset($_FILES['berkas']) && $_FILES['berkas']['error'] == 0) {
+                $ext = strtolower(pathinfo($_FILES['berkas']['name'], PATHINFO_EXTENSION));
+                $fileWajib = time() . '_' . $_SESSION['anggota_id'] . '.' . $ext;
+                if(!move_uploaded_file($_FILES['berkas']['tmp_name'], $targetDir . $fileWajib)) {
+                     $_SESSION['error'] = "Gagal upload berkas wajib.";
+                     require 'views/pendaftaran/kepengurusan.php'; return;
+                }
+            } else {
+                // Error jika file tidak ada
+                $_SESSION['error'] = "Berkas CV/KTM Wajib diupload! Silakan pilih file kembali.";
+                require 'views/pendaftaran/kepengurusan.php'; return;
+            }
+
+            // Berkas Pendukung (Opsional)
+            $filePendukung = '';
             if (isset($_FILES['berkas_pendukung']) && $_FILES['berkas_pendukung']['error'] == 0) {
-                $targetDir = "assets/uploads/berkas/";
-                if (!file_exists($targetDir)) mkdir($targetDir, 0777, true);
-                
-                $fileName = time() . '_' . basename($_FILES['berkas_pendukung']['name']);
-                $targetFile = $targetDir . $fileName;
-                
-                $fileType = strtolower(pathinfo($targetFile, PATHINFO_EXTENSION));
-                $allowedTypes = ['pdf', 'docx', 'doc', 'jpg', 'jpeg', 'png'];
-                
-                if(in_array($fileType, $allowedTypes) && $_FILES['berkas_pendukung']['size'] <= 5000000) {
-                    if (move_uploaded_file($_FILES['berkas_pendukung']['tmp_name'], $targetFile)) {
-                        $berkasName = $fileName;
-                    }
-                }
+                $ext2 = strtolower(pathinfo($_FILES['berkas_pendukung']['name'], PATHINFO_EXTENSION));
+                $filePendukung = time() . '_' . $_SESSION['anggota_id'] . '_supp.' . $ext2;
+                move_uploaded_file($_FILES['berkas_pendukung']['tmp_name'], $targetDir . $filePendukung);
             }
 
-            // 2. TANGKAP DATA DINAMIS & GABUNG JADI JSON (FILTERING)
-            $infoTambahan = [];
+            // 3. Packing Data Dinamis ke JSON
+            $detailKhusus = [];
             
-            // Helper function agar kode rapi
-            function simpanJikaAda(&$arr, $label, $postKey, $isArray = false) {
-                if ($isArray) {
-                    if (!empty($_POST[$postKey]) && is_array($_POST[$postKey])) {
-                        $arr[$label] = implode(', ', $_POST[$postKey]);
-                    }
-                } else {
-                    if (isset($_POST[$postKey]) && trim($_POST[$postKey]) !== '') {
-                        $arr[$label] = trim($_POST[$postKey]);
-                    }
-                }
-            }
+            if ($filePendukung) $detailKhusus['File Tambahan'] = $filePendukung;
 
-            // Paket Top Leader
-            simpanJikaAda($infoTambahan, 'Visi', 'visi');
-            simpanJikaAda($infoTambahan, 'Misi', 'misi');
-            simpanJikaAda($infoTambahan, 'Studi Kasus', 'studi_kasus');
-            
-            // Paket Administrasi
-            simpanJikaAda($infoTambahan, 'Software Skill', 'skill_software', true);
-            simpanJikaAda($infoTambahan, 'Kecepatan Ketik', 'kecepatan_ketik');
-            
-            // Paket Keuangan
-            simpanJikaAda($infoTambahan, 'Pemahaman Anggaran', 'paham_anggaran');
-            if (isset($_POST['integritas'])) $infoTambahan['Komitmen Integritas'] = "Bersedia Ganti Rugi";
-            
-            // Paket Koordinator
-            simpanJikaAda($infoTambahan, 'Gaya Kepemimpinan', 'gaya_kepemimpinan');
-            
-            // Paket Staff
-            simpanJikaAda($infoTambahan, 'Minat & Bakat', 'minat_bakat');
-            simpanJikaAda($infoTambahan, 'Ketersediaan Waktu', 'ketersediaan_waktu');
+            if (!empty($_POST['alasan_ketua'])) $detailKhusus['Alasan Jadi Ketua'] = $_POST['alasan_ketua'];
+            if (!empty($_POST['visi'])) $detailKhusus['Visi'] = $_POST['visi'];
+            if (!empty($_POST['misi'])) $detailKhusus['Misi'] = $_POST['misi'];
+            if (!empty($_POST['studi_kasus'])) $detailKhusus['Studi Kasus'] = $_POST['studi_kasus'];
+            if (!empty($_POST['skill_software'])) $detailKhusus['Skill'] = implode(', ', $_POST['skill_software']);
+            if (!empty($_POST['kecepatan_ketik'])) $detailKhusus['Kecepatan Ketik'] = $_POST['kecepatan_ketik'];
+            if (!empty($_POST['paham_anggaran'])) $detailKhusus['Paham Anggaran'] = $_POST['paham_anggaran'];
+            if (isset($_POST['integritas'])) $detailKhusus['Integritas'] = 'Bersedia Tanggung Jawab';
+            if (!empty($_POST['gaya_kepemimpinan'])) $detailKhusus['Gaya Pimpin'] = $_POST['gaya_kepemimpinan'];
+            if (!empty($_POST['minat_bakat'])) $detailKhusus['Minat Bakat'] = $_POST['minat_bakat'];
+            if (!empty($_POST['ketersediaan_waktu'])) $detailKhusus['Komitmen Waktu'] = $_POST['ketersediaan_waktu'] . '/10';
 
-            // Encode JSON
-            $jsonDetail = !empty($infoTambahan) ? json_encode($infoTambahan, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : null;
+            $jsonDetail = !empty($detailKhusus) ? json_encode($detailKhusus, JSON_UNESCAPED_UNICODE) : '-';
 
+            // 4. Siapkan Data
             $data = [
                 'anggota_id' => $_SESSION['anggota_id'],
                 'organisasi_id' => $organisasi_id,
-                'jabatan_id_diajukan' => $_POST['jabatan_id'] ?? '',
-                'divisi_id_diajukan' => $_POST['divisi_id'] ?? null,
-                'pengalaman_organisasi' => $_POST['pengalaman_organisasi'] ?? '',
-                'motivasi' => $_POST['motivasi'] ?? '',
-                'berkas_tambahan' => $berkasName,
-                'detail_tambahan' => $jsonDetail
+                'jabatan_id_diajukan' => $_POST['jabatan_id'],
+                'divisi_id_diajukan' => !empty($_POST['divisi_id']) ? $_POST['divisi_id'] : null,
+                'motivasi' => $_POST['motivasi'],
+                'pengalaman_organisasi' => !empty($_POST['pengalaman_organisasi']) ? $_POST['pengalaman_organisasi'] : '-',
+                'berkas_tambahan' => $fileWajib, 
+                'detail_tambahan' => $jsonDetail 
             ];
 
+            // 5. Simpan
             if ($this->pendaftaranModel->daftarKepengurusan($data)) {
-                Database::catatAktivitas(
-                    $_SESSION['anggota_id'], 
-                    'anggota', 
-                    'Mendaftar Kepengurusan', 
-                    'Mendaftar di: ' . $organisasi['nama_organisasi']
-                );
-
-                echo "<script>
-                        alert('Pendaftaran berhasil dikirim! Silakan cek riwayat untuk status.');
-                        window.location.href='index.php?action=riwayat';
-                      </script>";
+                echo "<script>alert('Pendaftaran Berhasil!'); window.location.href = 'index.php?action=dashboard';</script>";
                 exit;
             } else {
-                $error = "Terjadi kesalahan sistem saat mendaftar. Silakan coba lagi.";
+                $_SESSION['error'] = "Gagal menyimpan data ke database.";
             }
         }
 
         require 'views/pendaftaran/kepengurusan.php';
     }
 }
-?>
+?>  

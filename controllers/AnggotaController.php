@@ -1,152 +1,125 @@
 <?php
-require_once 'models/Database.php';
+// File: controllers/AnggotaController.php
 
 class AnggotaController {
     private $anggotaModel;
-    private $organisasiModel;
+    private $pendaftaranModel;
 
     public function __construct() {
-        // Autoloader akan otomatis mencari model
         $this->anggotaModel = new AnggotaModel();
-        $this->organisasiModel = new OrganisasiModel();
+        // Cek class PendaftaranModel agar aman
+        if (class_exists('PendaftaranModel')) {
+            $this->pendaftaranModel = new PendaftaranModel();
+        }
     }
 
     public function dashboard() {
         if (session_status() == PHP_SESSION_NONE) session_start();
-        
         if (!isset($_SESSION['anggota_id'])) {
-            header('Location: index.php?action=login');
-            exit;
+            header('Location: index.php?action=login'); exit;
         }
 
-        $anggota_id = $_SESSION['anggota_id'];
-        $anggota = $this->anggotaModel->getAnggotaById($anggota_id);
-        $organisasi = $this->organisasiModel->getAllOrganisasi();
-        $kepengurusan = $this->anggotaModel->getKepengurusanByAnggota($anggota_id);
-        $pendaftaran = $this->anggotaModel->getPendaftaranByAnggota($anggota_id);
+        $id = $_SESSION['anggota_id'];
+        $anggota = $this->anggotaModel->getAnggotaById($id);
+        
+        $kepengurusan = [];
+        $pendaftaran = [];
+        
+        if (method_exists($this->anggotaModel, 'getKepengurusanByAnggota')) {
+            $kepengurusan = $this->anggotaModel->getKepengurusanByAnggota($id);
+        }
+        
+        if ($this->pendaftaranModel) {
+            $pendaftaran = $this->pendaftaranModel->getRiwayatKepengurusan($id);
+        }
 
         require 'views/anggota/dashboard.php';
     }
 
     public function profile() {
         if (session_status() == PHP_SESSION_NONE) session_start();
-        
         if (!isset($_SESSION['anggota_id'])) {
-            header('Location: index.php?action=login');
-            exit;
+            header('Location: index.php?action=login'); exit;
         }
 
-        $anggota_id = $_SESSION['anggota_id'];
-        $anggota = $this->anggotaModel->getAnggotaById($anggota_id);
-        
+        $id = $_SESSION['anggota_id'];
+        $anggota = $this->anggotaModel->getAnggotaById($id);
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data = [
-                'anggota_id' => $anggota_id,
-                'nama_lengkap' => $_POST['nama_lengkap'] ?? '',
-                'no_telepon' => $_POST['no_telepon'] ?? '',
-                'fakultas' => $_POST['fakultas'] ?? '',
-                'jurusan' => $_POST['jurusan'] ?? '',
-                'angkatan' => $_POST['angkatan'] ?? ''
+                'id' => $id,
+                'nama' => $_POST['nama_lengkap'],
+                'nim' => $_POST['nim'],
+                'email' => $_POST['email'],
+                'no_hp' => $_POST['no_hp'],
+                'jurusan' => $_POST['jurusan'],
+                'prodi' => $_POST['prodi'],
+                'angkatan' => $_POST['angkatan'],
+                'foto' => $anggota['foto_profil'] // Default foto lama
             ];
 
-            // LOGIKA UPLOAD FOTO (ANTI DUPLIKAT)
-            if (isset($_FILES['foto_profil']) && $_FILES['foto_profil']['error'] === UPLOAD_ERR_OK) {
-                $uploadResult = $this->uploadFoto($_FILES['foto_profil']);
-                if ($uploadResult) {
-                    $data['foto_profil'] = $uploadResult;
-                    // Hapus foto lama jika bukan default dan beda file (opsional)
-                    // ... kode hapus file lama bisa ditambahkan di sini
-                } else {
-                    $error = "Gagal mengupload foto. Pastikan format JPG/PNG dan ukuran maks 2MB.";
+            // --- PROSES SIMPAN FOTO ---
+            if (!empty($_POST['cropped_image'])) {
+                $targetDir = dirname(__DIR__) . "/assets/images/profil/";
+                
+                // Cek & Buat Folder jika belum ada
+                if (!file_exists($targetDir)) {
+                    if (!mkdir($targetDir, 0777, true)) {
+                        echo "<script>alert('Gagal membuat folder profil. Hubungi Admin.'); window.location.href='index.php?action=profile';</script>";
+                        exit;
+                    }
                 }
-            }
 
-            // Jika tidak ada error upload atau tidak ada upload, lanjutkan update
-            if (!isset($error)) {
-                if ($this->anggotaModel->updateProfile($data)) {
-                    $_SESSION['nama_lengkap'] = $data['nama_lengkap'];
+                // Nama file unik per user (menggunakan ID)
+                $fileName = 'profil_' . $id . '.jpg';
+                
+                // Decode Base64
+                $image_parts = explode(";base64,", $_POST['cropped_image']);
+                if (count($image_parts) >= 2) {
+                    $decoded = base64_decode($image_parts[1]);
                     
-                    Database::catatAktivitas(
-                        $_SESSION['anggota_id'], 
-                        'anggota', 
-                        'Update Profil', 
-                        'Mengubah data profil pribadi'
-                    );
-
-                    $success = "Profile berhasil diperbarui!";
-                    // Refresh data anggota terbaru
-                    $anggota = $this->anggotaModel->getAnggotaById($anggota_id);
-                } else {
-                    $error = "Terjadi kesalahan saat menyimpan data ke database.";
+                    // Simpan file ke server
+                    if (file_put_contents($targetDir . $fileName, $decoded)) {
+                        $data['foto'] = $fileName; // Berhasil, update nama file di DB
+                    } else {
+                        echo "<script>alert('Gagal menyimpan file ke server (Permission Denied).'); window.location.href='index.php?action=profile';</script>";
+                        exit;
+                    }
                 }
             }
-        }
+            // -------------------------
 
+            // Update ke Database
+            if ($this->anggotaModel->updateAnggota($data)) {
+                // Update session nama jika berubah
+                $_SESSION['nama_lengkap'] = $data['nama'];
+                
+                // Redirect dengan timestamp agar browser refresh cache gambar
+                echo "<script>
+                        alert('Profil berhasil diperbarui!'); 
+                        window.location.href='index.php?action=profile&t=" . time() . "';
+                      </script>";
+            } else {
+                echo "<script>alert('Terjadi kesalahan database.'); window.history.back();</script>";
+            }
+            exit;
+        }
         require 'views/anggota/profile.php';
     }
 
     public function riwayat() {
         if (session_status() == PHP_SESSION_NONE) session_start();
-        
-        if (!isset($_SESSION['anggota_id'])) {
-            header('Location: index.php?action=login');
-            exit;
-        }
+        if (!isset($_SESSION['anggota_id'])) { header('Location: index.php?action=login'); exit; }
 
-        $anggota_id = $_SESSION['anggota_id'];
-        $pendaftaran_divisi = $this->anggotaModel->getRiwayatPendaftaranDivisi($anggota_id);
-        $pendaftaran_kepengurusan = $this->anggotaModel->getRiwayatPendaftaranKepengurusan($anggota_id);
+        $id = $_SESSION['anggota_id'];
+        $pendaftaran_kepengurusan = [];
+
+        if ($this->pendaftaranModel) {
+            $pendaftaran_kepengurusan = $this->pendaftaranModel->getRiwayatKepengurusan($id);
+        }
+        $pendaftaran_divisi = [];
 
         require 'views/anggota/riwayat.php';
-    }
-
-    // =================================================================
-    // FUNGSI HELPER UPLOAD (ANTI DUPLIKAT & HASHING)
-    // =================================================================
-    private function uploadFoto($file) {
-        $targetDir = "assets/images/profiles/";
-        
-        // Buat folder jika belum ada
-        if (!file_exists($targetDir)) {
-            mkdir($targetDir, 0777, true);
-        }
-
-        $tmpName = $file["tmp_name"];
-        $fileName = basename($file["name"]);
-        $fileType = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-
-        // 1. Validasi Ekstensi
-        $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'];
-        if (!in_array($fileType, $allowedTypes)) {
-            return false; // Tipe file tidak diizinkan
-        }
-
-        // 2. Validasi Ukuran (Maks 2MB)
-        if ($file["size"] > 2000000) {
-            return false; // File terlalu besar (>2MB)
-        }
-
-        // 3. CEK DUPLIKASI KONTEN (MD5 HASH)
-        // Hitung hash dari isi file sementara
-        $fileHash = md5_file($tmpName);
-        
-        // Nama file baru menggunakan hash konten + ekstensi asli
-        // Contoh: a1b2c3d4e5f6... .jpg
-        $newFileName = $fileHash . '.' . $fileType;
-        $targetFilePath = $targetDir . $newFileName;
-
-        // Cek apakah file dengan hash ini SUDAH ADA di folder?
-        if (file_exists($targetFilePath)) {
-            // JIKA SUDAH ADA: Tidak perlu upload ulang. Gunakan file yang sudah ada.
-            return $newFileName;
-        } else {
-            // JIKA BELUM ADA: Pindahkan file baru ke target
-            if (move_uploaded_file($tmpName, $targetFilePath)) {
-                return $newFileName;
-            } else {
-                return false; // Gagal memindahkan file
-            }
-        }
     }
 }
 ?>

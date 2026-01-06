@@ -1,153 +1,135 @@
-<?php include __DIR__ . '/../templates/header.php'; ?>
+<?php include __DIR__ . '/../../templates/header.php'; ?>
 
-<div class="container py-5">
-    
-    <div class="card shadow-sm border-0 mb-4 bg-primary text-white">
-        <div class="card-body p-4">
-            <div class="d-flex align-items-center">
-                <div class="bg-white bg-opacity-25 rounded-circle p-3 me-3">
-                    <i class="fas fa-university fa-2x text-white"></i>
-                </div>
-                <div>
-                    <h2 class="fw-bold mb-0">Dashboard <?php echo htmlspecialchars($orgDetail['nama_organisasi']); ?></h2>
-                    <p class="mb-0 opacity-75">Selamat datang, Admin. Kelola organisasi Anda di sini.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row g-4 mb-4">
-        <div class="col-md-4">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="text-muted small mb-1 text-uppercase fw-bold">Total Pengurus</p>
-                            <h2 class="fw-bold text-primary mb-0"><?php echo $stats['total_pengurus']; ?></h2>
-                        </div>
-                        <div class="bg-primary bg-opacity-10 text-primary rounded p-3">
-                            <i class="fas fa-users fa-lg"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<div class="container-fluid my-4">
+    <div class="row">
+        <div class="col-md-3">
+             <?php include __DIR__ . '/../../templates/sidebar.php'; ?>
         </div>
 
-        <div class="col-md-4">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="text-muted small mb-1 text-uppercase fw-bold">Pendaftaran Pending</p>
-                            <h2 class="fw-bold text-warning mb-0"><?php echo $stats['pendaftar_pending']; ?></h2>
-                        </div>
-                        <div class="bg-warning bg-opacity-10 text-warning rounded p-3">
-                            <i class="fas fa-user-clock fa-lg"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="text-muted small mb-1 text-uppercase fw-bold">Total Pelamar</p>
-                            <h2 class="fw-bold text-success mb-0"><?php echo $stats['total_pendaftar']; ?></h2>
-                        </div>
-                        <div class="bg-success bg-opacity-10 text-success rounded p-3">
-                            <i class="fas fa-file-alt fa-lg"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row g-4">
-        <div class="col-lg-8">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-bold"><i class="fas fa-cogs me-2"></i>Menu Pengelolaan</h5>
-                </div>
+        <div class="col-md-9">
+            
+            <div class="card border-0 shadow-sm mb-4 text-white" 
+                 style="background: linear-gradient(135deg, #0d6efd, #0a58ca);">
                 <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h4 class="fw-bold mb-1">Halo, Admin <?= htmlspecialchars($stats['nama_organisasi']) ?>! 👋</h4>
+                            <p class="mb-0 opacity-75">Selamat datang di Panel Manajemen Organisasi.</p>
+                        </div>
+                        <div class="d-none d-md-block opacity-25">
+                            <i class="fas fa-building fa-4x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm border-start border-4 border-warning">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <p class="text-muted text-uppercase small fw-bold mb-1">Pendaftar Baru</p>
+                                    <h2 class="fw-bold mb-0 text-dark"><?= $stats['pendaftar_pending'] ?></h2>
+                                </div>
+                                <div class="bg-warning bg-opacity-10 text-warning rounded p-3">
+                                    <i class="fas fa-user-clock fa-lg"></i>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <?php if($stats['pendaftar_pending'] > 0): ?>
+                                    <a href="index.php?action=ormawa_seleksi" class="btn btn-warning btn-sm w-100 fw-bold">
+                                        Proses Seleksi <i class="fas fa-arrow-right ms-1"></i>
+                                    </a>
+                                <?php else: ?>
+                                    <span class="text-muted small"><i class="fas fa-check-circle me-1"></i> Tidak ada antrean</span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm border-start border-4 border-success">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <p class="text-muted text-uppercase small fw-bold mb-1">Anggota Aktif</p>
+                                    <h2 class="fw-bold mb-0 text-dark"><?= $stats['anggota_aktif'] ?></h2>
+                                </div>
+                                <div class="bg-success bg-opacity-10 text-success rounded p-3">
+                                    <i class="fas fa-users fa-lg"></i>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <a href="index.php?action=ormawa_kelola_anggota" class="text-decoration-none small text-success fw-bold">
+                                    Lihat Data Anggota <i class="fas fa-chevron-right ms-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm border-start border-4 border-info">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <p class="text-muted text-uppercase small fw-bold mb-1">Kegiatan / Proker</p>
+                                    <h2 class="fw-bold mb-0 text-dark"><?= $stats['total_kegiatan'] ?></h2>
+                                </div>
+                                <div class="bg-info bg-opacity-10 text-info rounded p-3">
+                                    <i class="fas fa-calendar-check fa-lg"></i>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <a href="index.php?action=ormawa_kegiatan" class="text-decoration-none small text-info fw-bold">
+                                    Kelola Kegiatan <i class="fas fa-chevron-right ms-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h6 class="mb-0 fw-bold text-primary"><i class="fas fa-rocket me-2"></i>Akses Cepat</h6>
+                </div>
+                <div class="card-body">
                     <div class="row g-3">
-                        <div class="col-md-6">
-                            <a href="index.php?action=ormawa_kelola_anggota" class="btn btn-outline-primary w-100 p-3 text-start d-flex align-items-center">
-                                <i class="fas fa-users-cog fa-2x me-3"></i>
-                                <div>
-                                    <div class="fw-bold">Kelola Anggota</div>
-                                    <div class="small text-muted">Lihat dan atur pengurus aktif</div>
-                                </div>
+                        <div class="col-6 col-md-3">
+                            <a href="index.php?action=ormawa_edit_profil" class="btn btn-outline-primary w-100 py-3 d-flex flex-column align-items-center gap-2 h-100">
+                                <i class="fas fa-edit fa-2x"></i>
+                                <span class="fw-bold small">Edit Profil</span>
                             </a>
                         </div>
-                        <div class="col-md-6">
-                            <a href="index.php?action=ormawa_seleksi" class="btn btn-outline-success w-100 p-3 text-start d-flex align-items-center">
-                                <i class="fas fa-clipboard-check fa-2x me-3"></i>
-                                <div>
-                                    <div class="fw-bold">Seleksi Pendaftaran</div>
-                                    <div class="small text-muted">Terima atau tolak pelamar</div>
-                                </div>
+                        <div class="col-6 col-md-3">
+                            <a href="index.php?action=ormawa_seleksi" class="btn btn-outline-warning w-100 py-3 d-flex flex-column align-items-center gap-2 h-100">
+                                <i class="fas fa-user-plus fa-2x"></i>
+                                <span class="fw-bold small">Seleksi Masuk</span>
                             </a>
                         </div>
-                        <div class="col-md-6">
-                            <a href="index.php?action=ormawa_edit_profil" class="btn btn-outline-warning text-dark w-100 p-3 text-start d-flex align-items-center">
-                                <i class="fas fa-edit fa-2x me-3"></i>
-                                <div>
-                                    <div class="fw-bold">Edit Profil Organisasi</div>
-                                    <div class="small text-muted">Ubah deskripsi, visi, misi</div>
-                                </div>
+                        <div class="col-6 col-md-3">
+                            <a href="index.php?action=ormawa_laporan" class="btn btn-outline-success w-100 py-3 d-flex flex-column align-items-center gap-2 h-100">
+                                <i class="fas fa-file-alt fa-2x"></i>
+                                <span class="fw-bold small">Laporan</span>
                             </a>
                         </div>
-                        <div class="col-md-6">
-                            <a href="index.php?action=ormawa_kelola_divisi" class="btn btn-outline-info text-dark w-100 p-3 text-start d-flex align-items-center">
-                                <i class="fas fa-sitemap fa-2x me-3"></i>
-                                <div>
-                                    <div class="fw-bold">Kelola Divisi</div>
-                                    <div class="small text-muted">Tambah atau edit divisi</div>
-                                </div>
+                        <div class="col-6 col-md-3">
+                            <a href="index.php?action=ormawa_kelola_divisi" class="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center gap-2 h-100">
+                                <i class="fas fa-sitemap fa-2x"></i>
+                                <span class="fw-bold small">Kelola Divisi</span>
                             </a>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="col-lg-4">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-white py-3">
-                    <h6 class="mb-0 fw-bold">Aktivitas Terakhir Anda</h6>
-                </div>
-                <div class="card-body p-0">
-                    <ul class="list-group list-group-flush">
-                        <?php
-                        $conn = Database::getInstance()->getConnection();
-                        $logs = $conn->prepare("SELECT * FROM log_aktivitas WHERE user_id = :uid ORDER BY created_at DESC LIMIT 5");
-                        $logs->execute([':uid' => $_SESSION['admin_id']]);
-                        $dataLogs = $logs->fetchAll();
-
-                        if($dataLogs):
-                            foreach($dataLogs as $log):
-                        ?>
-                            <li class="list-group-item small py-3">
-                                <div class="fw-bold text-dark"><?php echo htmlspecialchars($log['aktivitas']); ?></div>
-                                <div class="text-muted" style="font-size: 0.85em;">
-                                    <?php echo htmlspecialchars($log['detail'] ?? ''); ?>
-                                </div>
-                                <div class="text-end text-muted" style="font-size: 0.75em;">
-                                    <?php echo date('d M H:i', strtotime($log['created_at'])); ?>
-                                </div>
-                            </li>
-                        <?php endforeach; else: ?>
-                            <li class="list-group-item text-center py-4 text-muted small">Belum ada aktivitas.</li>
-                        <?php endif; ?>
-                    </ul>
-                </div>
-            </div>
         </div>
     </div>
 </div>
 
-<?php include __DIR__ . '/../templates/footer.php'; ?>
+<?php include __DIR__ . '/../../templates/footer.php'; ?>

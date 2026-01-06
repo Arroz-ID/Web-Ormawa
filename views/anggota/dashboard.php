@@ -19,6 +19,7 @@
         overflow: hidden;
         border: 4px solid #fff;
         box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        background-color: #f8f9fa;
     }
     .profile-img {
         width: 100%;
@@ -58,7 +59,7 @@
                 </div>
                 <div class="card-body">
                     <?php if (empty($kepengurusan)): ?>
-                        <div class="text-muted py-3">
+                        <div class="text-muted py-3 text-center">
                             Anda belum memiliki jabatan di kepengurusan manapun.
                         </div>
                     <?php else: ?>
@@ -73,7 +74,7 @@
                                             <h6 class="mb-1 fw-bold"><?php echo htmlspecialchars($org['nama_organisasi']); ?></h6>
                                             <p class="mb-0 small text-muted">
                                                 <span class="badge bg-primary me-1"><?php echo htmlspecialchars($org['nama_jabatan']); ?></span>
-                                                <?php if($org['nama_divisi']) echo " • " . htmlspecialchars($org['nama_divisi']); ?>
+                                                <?php if(!empty($org['nama_divisi'])) echo " • " . htmlspecialchars($org['nama_divisi']); ?>
                                             </p>
                                         </div>
                                         <span class="badge bg-success rounded-pill">Aktif</span>
@@ -93,7 +94,7 @@
                 </div>
                 <div class="card-body">
                     <?php if (empty($pendaftaran)): ?>
-                        <div class="text-muted py-3">
+                        <div class="text-muted py-3 text-center">
                             Belum ada riwayat pendaftaran.
                         </div>
                     <?php else: ?>
@@ -110,26 +111,38 @@
                                 <tbody>
                                     <?php foreach (array_slice($pendaftaran, 0, 5) as $daftar): ?>
                                         <tr>
-                                            <td class="fw-bold"><?php echo htmlspecialchars($daftar['nama_organisasi']); ?></td>
+                                            <td class="fw-bold"><?php echo htmlspecialchars($daftar['nama_organisasi'] ?? '-'); ?></td>
                                             <td class="small">
                                                 <?php 
-                                                    echo $daftar['jenis'] == 'kepengurusan' 
-                                                        ? htmlspecialchars($daftar['nama_jabatan']) 
-                                                        : htmlspecialchars($daftar['nama_divisi']); 
+                                                    // PERBAIKAN: Menangani undefined key dengan operator ??
+                                                    $jenis = $daftar['jenis'] ?? 'kepengurusan'; 
+                                                    
+                                                    if ($jenis == 'kepengurusan') {
+                                                        echo htmlspecialchars($daftar['nama_jabatan'] ?? '-');
+                                                    } else {
+                                                        echo htmlspecialchars($daftar['nama_divisi'] ?? 'Anggota Divisi'); 
+                                                    }
                                                 ?>
                                             </td>
                                             <td class="small text-muted">
-                                                <?php echo date('d M Y', strtotime($daftar['tanggal_daftar'])); ?>
+                                                <?php 
+                                                    // Menangani tanggal kosong
+                                                    $tgl = $daftar['tanggal_daftar'] ?? date('Y-m-d');
+                                                    echo date('d M Y', strtotime($tgl)); 
+                                                ?>
                                             </td>
                                             <td>
                                                 <?php 
+                                                    $status = $daftar['status_pendaftaran'] ?? 'pending';
+                                                    
                                                     $statusClass = 'bg-secondary';
-                                                    if($daftar['status_pendaftaran'] == 'approved') $statusClass = 'bg-success';
-                                                    if($daftar['status_pendaftaran'] == 'rejected') $statusClass = 'bg-danger';
-                                                    if($daftar['status_pendaftaran'] == 'pending') $statusClass = 'bg-warning text-dark';
+                                                    if($status == 'approved' || $status == 'diterima') $statusClass = 'bg-success';
+                                                    elseif($status == 'rejected' || $status == 'ditolak') $statusClass = 'bg-danger';
+                                                    elseif($status == 'pending') $statusClass = 'bg-warning text-dark';
+                                                    elseif($status == 'interview') $statusClass = 'bg-info text-dark';
                                                 ?>
                                                 <span class="badge <?php echo $statusClass; ?> rounded-pill">
-                                                    <?php echo ucfirst($daftar['status_pendaftaran']); ?>
+                                                    <?php echo ucfirst($status); ?>
                                                 </span>
                                             </td>
                                         </tr>
@@ -154,8 +167,14 @@
                     
                     <div class="text-center mb-4">
                         <div class="profile-img-container bg-light d-flex align-items-center justify-content-center">
-                            <?php if (!empty($anggota['foto_profil'])): ?>
-                                <img src="assets/images/<?php echo htmlspecialchars($anggota['foto_profil']); ?>" class="profile-img" alt="Foto Profil">
+                            <?php 
+                                // Logika foto profil aman
+                                $foto = $anggota['foto_profil'] ?? '';
+                                $pathFoto = 'assets/images/profil/' . $foto;
+                                
+                                if (!empty($foto) && file_exists($pathFoto)): 
+                            ?>
+                                <img src="<?php echo htmlspecialchars($pathFoto) . '?v=' . time(); ?>" class="profile-img" alt="Foto Profil">
                             <?php else: ?>
                                 <i class="fas fa-user fa-4x text-secondary"></i>
                             <?php endif; ?>

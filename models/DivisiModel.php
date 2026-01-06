@@ -1,5 +1,5 @@
 <?php
-require_once 'Database.php';
+// File: models/DivisiModel.php
 
 class DivisiModel {
     private $db;
@@ -23,7 +23,6 @@ class DivisiModel {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
     
-    // --- FUNGSI BARU (CRUD) ---
     public function tambahDivisi($data) {
         $query = "INSERT INTO " . $this->table . " (organisasi_id, nama_divisi, deskripsi_divisi, kuota_anggota, status_aktif) 
                   VALUES (:org_id, :nama, :desc, :kuota, 'active')";
@@ -36,20 +35,7 @@ class DivisiModel {
         ]);
     }
 
-    public function updateDivisi($data) {
-        $query = "UPDATE " . $this->table . " SET nama_divisi = :nama, deskripsi_divisi = :desc, kuota_anggota = :kuota 
-                  WHERE divisi_id = :id";
-        $stmt = $this->db->prepare($query);
-        return $stmt->execute([
-            ':nama' => $data['nama_divisi'],
-            ':desc' => $data['deskripsi_divisi'],
-            ':kuota' => $data['kuota_anggota'],
-            ':id' => $data['divisi_id']
-        ]);
-    }
-
     public function hapusDivisi($id) {
-        // Soft delete
         $query = "UPDATE " . $this->table . " SET status_aktif = 'inactive' WHERE divisi_id = :id";
         $stmt = $this->db->prepare($query);
         return $stmt->execute([':id' => $id]);
@@ -60,10 +46,16 @@ class DivisiModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     
-    // Untuk fitur Anggota
     public function getAnggotaByDivisi($divisi_id) {
-        // (Kode lama Anda di sini, biarkan kosong jika belum ada atau copy dari sebelumnya)
-        return []; 
+        // Mengambil anggota yang diterima di divisi tersebut
+        $query = "SELECT a.nama_lengkap, a.foto_profil, a.jurusan, a.angkatan, j.nama_jabatan 
+                  FROM kepengurusan k
+                  JOIN anggota a ON k.anggota_id = a.anggota_id
+                  JOIN jabatan j ON k.jabatan_id = j.jabatan_id
+                  WHERE k.divisi_id = :div_id AND k.status_aktif = 'active'";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([':div_id' => $divisi_id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
 ?>
