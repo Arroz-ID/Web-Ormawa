@@ -1,142 +1,116 @@
 <?php include __DIR__ . '/../../views/templates/header.php'; ?>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+<div class="container-fluid">
+    <div class="row">
+        <?php include __DIR__ . '/../../views/templates/sidebar.php'; ?>
 
-<style>
-    /* Styling area crop */
-    .img-container {
-        max-height: 500px;
-        background-color: #333; 
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-    }
-    .img-container img { max-width: 100%; }
-    
-    /* Box preview kecil bulat */
-    .preview-box {
-        width: 160px; height: 160px;
-        overflow: hidden; margin: 0 auto;
-        border: 4px solid #fff;
-        border-radius: 50%;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        background: #f8f9fa;
-    }
-</style>
-
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-10">
+        <div class="col-md-9 ms-sm-auto col-lg-9 px-md-4 py-4">
             
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h3 class="fw-bold text-primary"><i class="fas fa-edit me-2"></i>Edit Profil Organisasi</h3>
-                    <p class="text-muted mb-0">Perbarui informasi utama organisasi Anda.</p>
-                </div>
-                <a href="index.php?action=ormawa_profil_lengkap" class="btn btn-outline-secondary rounded-pill px-4">
-                    <i class="fas fa-arrow-left me-2"></i>Kembali
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4 border-bottom">
+                <h1 class="h3 fw-bold text-gray-800">
+                    <i class="fas fa-edit text-primary me-2"></i>Edit Identitas Organisasi
+                </h1>
+                <a href="index.php?action=ormawa_profil_lengkap" class="btn btn-sm btn-outline-secondary rounded-pill">
+                    <i class="fas fa-arrow-left me-1"></i> Kembali
                 </a>
             </div>
 
-            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
-                <div class="card-header bg-primary text-white py-3">
-                    <h6 class="mb-0 fw-bold"><i class="fas fa-building me-2"></i>Formulir Data Organisasi</h6>
-                </div>
+            <div class="card shadow-sm border-0 rounded-4">
                 <div class="card-body p-4">
-                    
-                    <form action="" method="POST" enctype="multipart/form-data">
-                        <input type="hidden" name="cropped_image" id="cropped_image">
-
+                    <form action="index.php?action=ormawa_edit_profil" method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="id" value="<?= $organisasi['organisasi_id'] ?>">
+                        
                         <div class="row">
-                            <div class="col-md-4 text-center border-end mb-4 mb-md-0">
-                                <label class="form-label fw-bold text-muted small mb-3">LOGO ORGANISASI</label>
-                                
-                                <div class="mb-3 position-relative mx-auto" style="width: 180px;">
+                            <div class="col-md-4 text-center mb-4">
+                                <div class="mb-3 position-relative d-inline-block">
                                     <?php 
-                                        // Logika Penampil Logo
-                                        $logoFile = $organisasi['logo'] ?? '';
-                                        // Default Placeholder
-                                        $src = 'https://ui-avatars.com/api/?name=' . urlencode($organisasi['nama_organisasi']) . '&background=random&size=200';
-                                        
-                                        // Cek Folder Profil (Baru)
-                                        if (!empty($logoFile) && file_exists('assets/images/profil/' . $logoFile)) {
-                                            $src = 'assets/images/profil/' . $logoFile . '?v=' . time();
-                                        } 
-                                        // Cek Folder Lama
-                                        elseif (!empty($logoFile) && file_exists('assets/images/' . $logoFile)) {
-                                            $src = 'assets/images/' . $logoFile . '?v=' . time();
-                                        }
+                                        $logo = !empty($organisasi['logo']) && file_exists('assets/images/profil/' . $organisasi['logo']) 
+                                                ? 'assets/images/profil/' . $organisasi['logo'] 
+                                                : 'https://ui-avatars.com/api/?name=' . urlencode($organisasi['nama_organisasi']) . '&background=random&size=200';
                                     ?>
+                                    <img src="<?= $logo ?>?t=<?= time() ?>" alt="Logo Preview" class="rounded-circle img-thumbnail shadow-sm" style="width: 200px; height: 200px; object-fit: cover;" id="logoPreview">
                                     
-                                    <img id="logoPreview" 
-                                         src="<?php echo htmlspecialchars($src); ?>" 
-                                         class="rounded-circle shadow-lg border p-1 bg-white"
-                                         style="width: 180px; height: 180px; object-fit: cover;">
-                                    
-                                    <div class="position-absolute bottom-0 end-0 mb-3 me-2">
-                                        <label for="inputImage" class="btn btn-warning text-dark btn-sm rounded-circle shadow hover-scale" 
-                                               style="width: 45px; height: 45px; display:flex; align-items:center; justify-content:center; cursor:pointer;" 
-                                               title="Ganti Logo">
-                                            <i class="fas fa-camera fa-lg"></i>
-                                        </label>
-                                    </div>
+                                    <label for="logoInput" class="position-absolute bottom-0 end-0 bg-white border rounded-circle p-2 shadow-sm" style="cursor: pointer; width: 40px; height: 40px;">
+                                        <i class="fas fa-camera text-primary"></i>
+                                    </label>
                                 </div>
-
-                                <input type="file" class="form-control d-none" id="inputImage" accept="image/*">
                                 
-                                <div class="small text-muted fst-italic mt-3" id="statusLogo">
-                                    Format: JPG/PNG (Max 2MB)<br>Disarankan rasio 1:1
+                                <div class="mt-2">
+                                    <label for="logoInput" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                        <i class="fas fa-upload me-1"></i> Ganti Logo
+                                    </label>
+                                    <input type="file" id="logoInput" class="d-none" accept="image/png, image/jpeg, image/jpg">
+                                    <input type="hidden" name="cropped_image" id="croppedImage">
                                 </div>
+                                <small class="text-muted d-block mt-2" style="font-size: 0.8rem;">
+                                    Format: JPG/PNG. Maks: 2MB.<br>Disarankan rasio 1:1 (Persegi).
+                                </small>
                             </div>
 
-                            <div class="col-md-8 ps-md-4">
+                            <div class="col-md-8">
                                 <div class="row g-3">
-                                    <div class="col-12">
-                                        <label class="form-label fw-bold small text-muted">Nama Organisasi</label>
-                                        <input type="text" class="form-control" name="nama_organisasi" value="<?php echo htmlspecialchars($organisasi['nama_organisasi']); ?>" required>
+                                    
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-bold small text-uppercase text-muted">Nama Organisasi</label>
+                                        <input type="text" name="nama_organisasi" class="form-control form-control-lg fw-bold" 
+                                               value="<?= htmlspecialchars($organisasi['nama_organisasi']) ?>" required>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold small text-uppercase text-muted">Nomor WhatsApp Admin</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-success text-white border-success">
+                                                <i class="fab fa-whatsapp"></i>
+                                            </span>
+                                            <input type="text" name="no_whatsapp" class="form-control border-success" 
+                                                   value="<?= htmlspecialchars($organisasi['no_whatsapp'] ?? '') ?>" 
+                                                   placeholder="08123xxxx (Tanpa +62)">
+                                        </div>
+                                        <div class="form-text small">Nomor ini akan menjadi tombol "Hubungi Admin" bagi user.</div>
                                     </div>
 
                                     <div class="col-md-6">
-                                        <label class="form-label fw-bold small text-muted">Kategori</label>
-                                        <select class="form-select" name="jenis_organisasi">
-                                            <option value="UKM" <?php echo ($organisasi['jenis_organisasi'] == 'UKM') ? 'selected' : ''; ?>>UKM (Unit Kegiatan Mahasiswa)</option>
-                                            <option value="HIMA" <?php echo ($organisasi['jenis_organisasi'] == 'HIMA') ? 'selected' : ''; ?>>HIMA (Himpunan Mahasiswa)</option>
-                                            <option value="BEM" <?php echo ($organisasi['jenis_organisasi'] == 'BEM') ? 'selected' : ''; ?>>BEM</option>
-                                            <option value="MPM" <?php echo ($organisasi['jenis_organisasi'] == 'MPM') ? 'selected' : ''; ?>>MPM</option>
+                                        <label class="form-label fw-bold small text-uppercase text-muted">Jenis Organisasi</label>
+                                        <select name="jenis_organisasi" class="form-select">
+                                            <option value="BEM" <?= ($organisasi['jenis_organisasi'] == 'BEM') ? 'selected' : '' ?>>BEM</option>
+                                            <option value="DPM" <?= ($organisasi['jenis_organisasi'] == 'DPM') ? 'selected' : '' ?>>DPM</option>
+                                            <option value="HIMA" <?= ($organisasi['jenis_organisasi'] == 'HIMA') ? 'selected' : '' ?>>Himpunan Mahasiswa (HIMA)</option>
+                                            <option value="UKM" <?= ($organisasi['jenis_organisasi'] == 'UKM') ? 'selected' : '' ?>>UKM</option>
+                                            <option value="KOMUNITAS" <?= ($organisasi['jenis_organisasi'] == 'KOMUNITAS') ? 'selected' : '' ?>>Komunitas</option>
                                         </select>
                                     </div>
 
                                     <div class="col-md-6">
-                                        <label class="form-label fw-bold small text-muted">Tanggal Berdiri</label>
-                                        <input type="date" class="form-control" name="tanggal_berdiri" value="<?php echo htmlspecialchars($organisasi['tanggal_berdiri']); ?>">
+                                        <label class="form-label fw-bold small text-uppercase text-muted">Tanggal Berdiri</label>
+                                        <input type="date" name="tanggal_berdiri" class="form-control" 
+                                               value="<?= $organisasi['tanggal_berdiri'] ?>">
                                     </div>
 
                                     <div class="col-12">
-                                        <label class="form-label fw-bold small text-muted">Deskripsi Singkat</label>
-                                        <textarea class="form-control" name="deskripsi" rows="3"><?php echo htmlspecialchars($organisasi['deskripsi']); ?></textarea>
+                                        <label class="form-label fw-bold small text-uppercase text-muted">Deskripsi Singkat</label>
+                                        <textarea name="deskripsi" class="form-control" rows="3" placeholder="Jelaskan secara singkat tentang organisasi ini..."><?= htmlspecialchars($organisasi['deskripsi']) ?></textarea>
                                     </div>
 
-                                    <div class="col-12">
-                                        <label class="form-label fw-bold small text-muted">Visi</label>
-                                        <textarea class="form-control" name="visi" rows="2"><?php echo htmlspecialchars($organisasi['visi']); ?></textarea>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold small text-uppercase text-muted">Visi</label>
+                                        <textarea name="visi" class="form-control bg-light" rows="5" placeholder="Tuliskan visi organisasi..."><?= htmlspecialchars($organisasi['visi']) ?></textarea>
                                     </div>
 
-                                    <div class="col-12">
-                                        <label class="form-label fw-bold small text-muted">Misi</label>
-                                        <textarea class="form-control" name="misi" rows="3"><?php echo htmlspecialchars($organisasi['misi']); ?></textarea>
-                                        <div class="form-text">Gunakan enter untuk poin baru.</div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold small text-uppercase text-muted">Misi</label>
+                                        <textarea name="misi" class="form-control bg-light" rows="5" placeholder="Tuliskan misi organisasi..."><?= htmlspecialchars($organisasi['misi']) ?></textarea>
                                     </div>
                                 </div>
 
-                                <div class="mt-4 text-end">
-                                    <button type="submit" class="btn btn-primary fw-bold px-5 rounded-pill shadow-sm hover-lift">
+                                <div class="mt-4 pt-3 border-top text-end">
+                                    <button type="reset" class="btn btn-light border rounded-pill me-2 px-4">Reset</button>
+                                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
                                         <i class="fas fa-save me-2"></i>Simpan Perubahan
                                     </button>
                                 </div>
                             </div>
                         </div>
+
                     </form>
                 </div>
             </div>
@@ -144,123 +118,97 @@
     </div>
 </div>
 
-<div class="modal fade" id="modalCrop" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+<div class="modal fade" id="cropModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border-0">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold">Sesuaikan Logo</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold"><i class="fas fa-crop-alt me-2"></i>Sesuaikan Posisi Logo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <div class="img-container rounded-3 shadow-sm">
-                            <img id="imageToCrop" src="" alt="Picture">
-                        </div>
-                    </div>
-                    <div class="col-md-4 text-center">
-                        <div class="mb-3 fw-bold small">PREVIEW HASIL</div>
-                        <div class="preview-box mb-4" id="previewResult"></div>
-                        <div class="d-grid gap-2">
-                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="if(cropper) cropper.rotate(90)">
-                                <i class="fas fa-redo"></i> Putar
-                            </button>
-                            <button type="button" class="btn btn-success fw-bold py-2" id="cropAndSave">
-                                <i class="fas fa-check-circle"></i> Gunakan Logo Ini
-                            </button>
-                        </div>
-                    </div>
+            <div class="modal-body p-0 bg-dark text-center">
+                <div class="img-container" style="max-height: 500px;">
+                    <img id="imageToCrop" src="" style="max-width: 100%; display: block; margin: 0 auto;">
                 </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold" id="cropAndSave">
+                    <i class="fas fa-check me-2"></i>Potong & Pakai
+                </button>
             </div>
         </div>
     </div>
 </div>
 
-<style>
-    .hover-lift { transition: transform 0.2s; }
-    .hover-lift:hover { transform: translateY(-3px); }
-    .hover-scale:hover { transform: scale(1.1); transition: transform 0.2s; }
-</style>
-
-<?php include __DIR__ . '/../../views/templates/footer.php'; ?>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
 <script>
     let cropper;
-    const inputImage = document.getElementById('inputImage');
+    const logoInput = document.getElementById('logoInput');
     const imageToCrop = document.getElementById('imageToCrop');
-    const logoPreview = document.getElementById('logoPreview');
-    const croppedImageInput = document.getElementById('cropped_image');
-    const statusLogo = document.getElementById('statusLogo');
-    
-    // Init Modal Bootstrap
-    const modalElement = document.getElementById('modalCrop');
-    const modalCrop = new bootstrap.Modal(modalElement);
+    const cropModal = new bootstrap.Modal(document.getElementById('cropModal'));
 
-    // 1. Pilih File
-    inputImage.addEventListener('change', function (e) {
+    // 1. Saat file dipilih
+    logoInput.addEventListener('change', function(e) {
         const files = e.target.files;
         if (files && files.length > 0) {
             const file = files[0];
+            
+            // Validasi tipe file
             if (!file.type.startsWith('image/')) {
-                alert('File harus berupa gambar!');
+                alert('Mohon pilih file gambar (JPG/PNG)');
                 return;
             }
+
             const reader = new FileReader();
-            reader.onload = function (e) {
+            reader.onload = function(e) {
                 imageToCrop.src = e.target.result;
-                modalCrop.show();
+                
+                // Tampilkan Modal
+                cropModal.show();
+                
+                // Reset Cropper jika sudah ada sebelumnya
+                if (cropper) {
+                    cropper.destroy();
+                }
             };
             reader.readAsDataURL(file);
         }
-        this.value = ''; 
     });
 
-    // 2. Init Cropper
-    modalElement.addEventListener('shown.bs.modal', function () {
-        if (cropper) cropper.destroy();
+    // 2. Inisialisasi Cropper saat modal terbuka penuh
+    document.getElementById('cropModal').addEventListener('shown.bs.modal', function () {
         cropper = new Cropper(imageToCrop, {
-            aspectRatio: 1, 
+            aspectRatio: 1, // Memaksa rasio persegi 1:1
             viewMode: 1,
-            preview: '.preview-box',
-            dragMode: 'move',
             autoCropArea: 0.8,
-            restore: false,
-            guides: false,
-            center: true,
-            highlight: false,
-            cropBoxMovable: true,
-            cropBoxResizable: true,
-            toggleDragModeOnDblclick: false,
+            dragMode: 'move'
         });
     });
 
-    // 3. Destroy Cropper
-    modalElement.addEventListener('hidden.bs.modal', function () { 
-        if (cropper) { cropper.destroy(); cropper = null; } 
-    });
-
-    // 4. LOGIKA LIVE PREVIEW
-    document.getElementById('cropAndSave').addEventListener('click', function () {
+    // 3. Saat tombol "Potong & Simpan" diklik
+    document.getElementById('cropAndSave').addEventListener('click', function() {
         if (!cropper) return;
-        
-        const canvas = cropper.getCroppedCanvas({ 
-            width: 500, height: 500, 
-            fillColor: '#fff',
-            imageSmoothingEnabled: true,
-            imageSmoothingQuality: 'high'
+
+        // Ambil hasil crop
+        const canvas = cropper.getCroppedCanvas({
+            width: 500,  // Resize otomatis ke 500x500 px agar ringan
+            height: 500
         });
+
+        // Convert ke Base64
+        const base64data = canvas.toDataURL('image/jpeg', 0.8); // Kualitas 80%
+
+        // Masukkan ke Hidden Input untuk dikirim ke Server
+        document.getElementById('croppedImage').value = base64data;
         
-        const base64data = canvas.toDataURL('image/jpeg', 0.9);
+        // Update Preview di Halaman
+        document.getElementById('logoPreview').src = base64data;
         
-        // Simpan ke Input Hidden
-        croppedImageInput.value = base64data;
-        
-        // Update Tampilan Langsung (Live Preview)
-        logoPreview.src = base64data;
-        
-        // Feedback Visual
-        statusLogo.innerHTML = '<span class="text-success fw-bold"><i class="fas fa-check-circle"></i> Logo siap disimpan! Klik "Simpan Perubahan".</span>';
-        
-        modalCrop.hide();
+        // Tutup Modal
+        cropModal.hide();
     });
 </script>
+
+<?php include __DIR__ . '/../../views/templates/footer.php'; ?>

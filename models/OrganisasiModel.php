@@ -27,11 +27,13 @@ class OrganisasiModel {
     }
 
     public function getOrganisasiDetail($id) {
-        // Menghitung jumlah divisi dan pengurus secara otomatis
-        $query = "SELECT o.*, COUNT(DISTINCT d.divisi_id) as jumlah_divisi, COUNT(DISTINCT k.kepengurusan_id) as jumlah_pengurus
+        // Mengambil detail lengkap termasuk statistik dan no_whatsapp
+        $query = "SELECT o.*, 
+                  COUNT(DISTINCT d.divisi_id) as jumlah_divisi, 
+                  COUNT(DISTINCT k.kepengurusan_id) as jumlah_pengurus
                   FROM organisasi o
-                  LEFT JOIN divisi d ON o.organisasi_id = d.organisasi_id AND (d.status_aktif = 'active' OR d.status_aktif IS NULL)
-                  LEFT JOIN kepengurusan k ON o.organisasi_id = k.organisasi_id AND (k.status_aktif = 'active' OR k.status_aktif IS NULL)
+                  LEFT JOIN divisi d ON o.organisasi_id = d.organisasi_id AND d.status_aktif = 'active'
+                  LEFT JOIN kepengurusan k ON o.organisasi_id = k.organisasi_id AND k.status_aktif = 'active'
                   WHERE o.organisasi_id = :id
                   GROUP BY o.organisasi_id";
         $stmt = $this->db->prepare($query);
@@ -47,7 +49,7 @@ class OrganisasiModel {
                   JOIN jabatan j ON k.jabatan_id = j.jabatan_id
                   LEFT JOIN divisi d ON k.divisi_id = d.divisi_id
                   WHERE k.organisasi_id = :organisasi_id 
-                  AND (k.status_aktif = 'active' OR k.status_aktif IS NULL)
+                  AND k.status_aktif = 'active'
                   ORDER BY j.level_jabatan ASC, d.nama_divisi ASC";
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':organisasi_id', $organisasi_id);
@@ -55,10 +57,8 @@ class OrganisasiModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // --- FUNGSI BARU UNTUK GALERI KEGIATAN ---
     public function getKegiatanByOrganisasi($organisasi_id) {
         try {
-            // Mengambil 6 kegiatan terakhir
             $query = "SELECT * FROM kegiatan 
                       WHERE organisasi_id = :id 
                       ORDER BY tanggal_kegiatan DESC LIMIT 6";
@@ -66,17 +66,22 @@ class OrganisasiModel {
             $stmt->execute([':id' => $organisasi_id]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
-            // Jika tabel kegiatan belum dibuat, kembalikan array kosong agar tidak error
             return [];
         }
     }
 
+    // UPDATE FITUR WA DISINI
     public function updateOrganisasi($data) {
         try {
             $query = "UPDATE " . $this->table . " 
-                      SET nama_organisasi = :nama, jenis_organisasi = :jenis, 
-                          deskripsi = :deskripsi, visi = :visi, misi = :misi, 
-                          tanggal_berdiri = :tanggal, logo = :logo
+                      SET nama_organisasi = :nama, 
+                          jenis_organisasi = :jenis, 
+                          deskripsi = :deskripsi, 
+                          visi = :visi, 
+                          misi = :misi, 
+                          no_whatsapp = :no_whatsapp, -- Tambahan kolom WA
+                          tanggal_berdiri = :tanggal, 
+                          logo = :logo
                       WHERE organisasi_id = :id";
             $stmt = $this->db->prepare($query);
             
@@ -86,11 +91,15 @@ class OrganisasiModel {
                 ':deskripsi' => $data['deskripsi'],
                 ':visi' => $data['visi'], 
                 ':misi' => $data['misi'], 
+                ':no_whatsapp' => $data['no_whatsapp'] ?? null, // Handle jika kosong
                 ':tanggal' => $data['tanggal'], 
                 ':logo' => $data['logo'],
                 ':id' => $data['id']
             ]);
-        } catch (PDOException $e) { return false; }
+        } catch (PDOException $e) { 
+            // Opsional: Log error here
+            return false; 
+        }
     }
 }
 ?>

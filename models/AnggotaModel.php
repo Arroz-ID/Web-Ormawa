@@ -9,37 +9,47 @@ class AnggotaModel {
         $this->db = Database::getInstance()->getConnection();
     }
 
-    // --- FUNGSI LOGIN UTAMA ---
+    // 1. Login User (Bisa pakai NIM atau Email)
     public function login($identifier, $password) {
-        // Bisa login pakai NIM atau Email
-        $query = "SELECT * FROM " . $this->table . " 
-                  WHERE nim = :id OR email = :id";
-        
+        $query = "SELECT * FROM " . $this->table . " WHERE nim = :id OR email = :id";
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':id', $identifier);
         $stmt->execute();
-        
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        // Verifikasi Password
+        // Verifikasi Password Hash
         if ($user && password_verify($password, $user['password'])) {
             return $user;
         }
-        
         return false;
     }
 
-    // Fungsi Register
+    // 2. Cek apakah NIM sudah terdaftar (untuk Register)
+    public function cekNimExist($nim) {
+        $query = "SELECT COUNT(*) FROM " . $this->table . " WHERE nim = :nim";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':nim', $nim);
+        $stmt->execute();
+        return $stmt->fetchColumn() > 0;
+    }
+
+    // 3. Cek apakah Email sudah terdaftar
+    public function cekEmailExist($email) {
+        $query = "SELECT COUNT(*) FROM " . $this->table . " WHERE email = :email";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':email', $email);
+        $stmt->execute();
+        return $stmt->fetchColumn() > 0;
+    }
+
+    // 4. Registrasi Anggota Baru
     public function register($data) {
-        // Hash Password sebelum simpan
-        $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
-        
-        $query = "INSERT INTO " . $this->table . " 
-                  (nim, nama_lengkap, email, password, jurusan, fakultas, angkatan, no_telepon, role) 
-                  VALUES 
-                  (:nim, :nama, :email, :pass, :jurusan, :fakultas, :angkatan, :hp, 'anggota')";
-        
         try {
+            $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
+            $query = "INSERT INTO " . $this->table . " 
+                      (nim, nama_lengkap, email, password, jurusan, fakultas, angkatan, no_telepon) 
+                      VALUES (:nim, :nama, :email, :pass, :jurusan, :fakultas, :angkatan, :telp)";
+            
             $stmt = $this->db->prepare($query);
             return $stmt->execute([
                 ':nim'      => $data['nim'],
@@ -49,31 +59,69 @@ class AnggotaModel {
                 ':jurusan'  => $data['jurusan'],
                 ':fakultas' => $data['fakultas'],
                 ':angkatan' => $data['angkatan'],
-                ':hp'       => $data['no_telepon']
+                ':telp'     => $data['no_telepon']
             ]);
         } catch (PDOException $e) {
             return false;
         }
     }
 
-    // Cek Duplikasi NIM
-    public function cekNimExist($nim) {
-        $stmt = $this->db->prepare("SELECT COUNT(*) FROM " . $this->table . " WHERE nim = :nim");
-        $stmt->execute([':nim' => $nim]);
-        return $stmt->fetchColumn() > 0;
-    }
-
-    // Cek Duplikasi Email
-    public function cekEmailExist($email) {
-        $stmt = $this->db->prepare("SELECT COUNT(*) FROM " . $this->table . " WHERE email = :email");
-        $stmt->execute([':email' => $email]);
-        return $stmt->fetchColumn() > 0;
-    }
-
+    // 5. Ambil Data Profil Anggota
     public function getAnggotaById($id) {
-        $stmt = $this->db->prepare("SELECT * FROM " . $this->table . " WHERE anggota_id = :id");
-        $stmt->execute([':id' => $id]);
+        $query = "SELECT * FROM " . $this->table . " WHERE anggota_id = :id";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':id', $id);
+        $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    // 6. Update Profil Anggota
+    public function updateAnggota($data) {
+        try {
+            $query = "UPDATE " . $this->table . " 
+                      SET nama_lengkap = :nama, 
+                          nim = :nim, 
+                          email = :email, 
+                          no_telepon = :no_hp, 
+                          jurusan = :jurusan, 
+                          prodi = :prodi,
+                          angkatan = :angkatan, 
+                          foto_profil = :foto
+                      WHERE anggota_id = :id";
+            
+            // Handle jika kolom prodi tidak ada di tabel (opsional)
+            // Jika error kolom tidak ditemukan, hapus baris 'prodi' => ...
+            
+            $stmt = $this->db->prepare($query);
+            return $stmt->execute([
+                ':nama'     => $data['nama'],
+                ':nim'      => $data['nim'],
+                ':email'    => $data['email'],
+                ':no_hp'    => $data['no_hp'],
+                ':jurusan'  => $data['jurusan'],
+                ':prodi'    => $data['prodi'] ?? '', // Default kosong jika null
+                ':angkatan' => $data['angkatan'],
+                ':foto'     => $data['foto'],
+                ':id'       => $data['id']
+            ]);
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
+    // 7. Ambil Kepengurusan Aktif (Untuk Dashboard)
+    public function getKepengurusanByAnggota($id) {
+        $query = "SELECT k.*, o.nama_organisasi, j.nama_jabatan, d.nama_divisi 
+                  FROM kepengurusan k 
+                  JOIN organisasi o ON k.organisasi_id = o.organisasi_id 
+                  JOIN jabatan j ON k.jabatan_id = j.jabatan_id 
+                  LEFT JOIN divisi d ON k.divisi_id = d.divisi_id 
+                  WHERE k.anggota_id = :id 
+                  AND (k.status_aktif = 'active' OR k.status_aktif IS NULL)";
+        
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([':id' => $id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
 ?>

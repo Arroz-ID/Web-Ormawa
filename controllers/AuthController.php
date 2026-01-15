@@ -1,11 +1,17 @@
 <?php
 // File: controllers/AuthController.php
 
+// --- PERBAIKAN: Load Model Terlebih Dahulu ---
+// Menggunakan __DIR__ agar path tetap benar meskipun dipanggil dari folder lain
+require_once __DIR__ . '/../models/AnggotaModel.php';
+require_once __DIR__ . '/../models/AdminModel.php';
+
 class AuthController {
     private $anggotaModel;
     private $adminModel;
 
     public function __construct() {
+        // Sekarang class Model sudah dikenali karena sudah di-require di atas
         $this->anggotaModel = new AnggotaModel();
         $this->adminModel = new AdminModel();
     }
@@ -25,6 +31,7 @@ class AuthController {
                 $_SESSION['admin_level']  = $admin['level'];
                 $_SESSION['admin_org_id'] = $admin['organisasi_id'] ?? null;
                 
+                // Pastikan class Database sudah di-load di index.php, atau tambahkan require jika perlu
                 Database::catatAktivitas($admin['admin_id'], $admin['level'], 'Login ke Sistem');
                 
                 if ($admin['level'] == 'super_admin') {
@@ -65,11 +72,13 @@ class AuthController {
                 'email' => trim($_POST['email'] ?? ''),
                 'password' => $_POST['password'] ?? '',
                 'jurusan' => $_POST['jurusan'] ?? '',
+                // Logika sederhana penentuan fakultas berdasarkan jurusan
                 'fakultas' => ($_POST['jurusan'] == 'Agrobisnis') ? 'Pertanian' : 'Teknik dan Informatika', 
                 'angkatan' => $_POST['angkatan'] ?? '',
                 'no_telepon' => $_POST['no_telepon'] ?? ''
             ];
 
+            // Validasi Input
             if ($this->anggotaModel->cekNimExist($data['nim'])) {
                 $_SESSION['error'] = "NIM sudah terdaftar!";
             } else if ($this->anggotaModel->cekEmailExist($data['email'])) {

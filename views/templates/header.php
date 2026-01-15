@@ -21,6 +21,7 @@ if (session_status() == PHP_SESSION_NONE) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
     
     <style>
@@ -165,14 +166,24 @@ if (session_status() == PHP_SESSION_NONE) {
 
                 <div class="d-flex align-items-center gap-2">
                     
-                    <?php if (isset($_SESSION['admin_id'])): ?>
+                    <?php if (isset($_SESSION['admin_id'])): 
+                        // --- PERBAIKAN DI SINI ---
+                        // Menentukan Link Dashboard dan Label Admin berdasarkan Level
+                        $dashboard_link = 'index.php?action=admin_dashboard'; // Default ke Super Admin
+                        $label_admin = 'Administrator';
+
+                        if (isset($_SESSION['admin_level']) && $_SESSION['admin_level'] == 'admin_ormawa') {
+                            $dashboard_link = 'index.php?action=ormawa_dashboard'; // Link khusus Admin Ormawa
+                            $label_admin = 'Admin Ormawa'; // Label khusus Admin Ormawa
+                        }
+                    ?>
                         <div class="dropdown">
                             <a class="btn btn-light text-primary px-4 rounded-pill dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
                                 <i class="fas fa-user-shield me-2"></i> 
-                                <span>Admin</span>
+                                <span><?php echo $label_admin; ?></span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end mt-3">
-                                <li><a class="dropdown-item" href="index.php?action=admin_dashboard">Dashboard Admin</a></li>
+                                <li><a class="dropdown-item" href="<?php echo $dashboard_link; ?>">Dashboard</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item text-danger" href="index.php?action=logout">Logout</a></li>
                             </ul>
@@ -183,7 +194,6 @@ if (session_status() == PHP_SESSION_NONE) {
                             <a class="btn btn-light text-primary px-4 rounded-pill dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
                                 <i class="fas fa-user-circle me-2"></i> 
                                 <?php 
-                                    // PERBAIKAN: Ambil nama dari session dengan aman
                                     $nama_display = isset($_SESSION['nama_lengkap']) ? explode(' ', $_SESSION['nama_lengkap'])[0] : 'Member'; 
                                 ?>
                                 <span><?php echo htmlspecialchars($nama_display); ?></span>
